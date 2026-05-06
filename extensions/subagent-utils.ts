@@ -52,25 +52,71 @@ When reviewing completed work, you will:
 Your output should be structured, actionable, and focused on helping maintain high code quality while ensuring project goals are met. Be thorough but concise, and always provide constructive feedback that helps improve both the current implementation and future development practices.`;
 
 /**
- * Build a role prompt string from an optional role name.
- * Returns empty string when role is undefined or empty.
+ * Build a role prompt string from an optional role name and assigned todo file.
+ * Returns empty string when role and todoFile are both undefined or empty.
  *
  * Known roles with full prompts:
  *   - "code-quality-reviewer" → Senior Code Reviewer (ported from agents/code-reviewer.md)
  *
  * Unknown roles fall back to a generic "You are a <role>." prompt.
+ * When todoFile is provided, appends Superpowers TODO isolation and cleanup guidance.
  *
  * @example
  *   buildRolePrompt("code-quality-reviewer") → full Senior Code Reviewer prompt
  *   buildRolePrompt("implementer")           → "You are a implementer."
  *   buildRolePrompt(undefined)               → ""
+ *   buildRolePrompt("implementer", ".superpowers/todos/implementer-1.md") → prompt + TODO guidance
  */
-export function buildRolePrompt(role: string | undefined): string {
-  if (!role) return "";
+export const SUBAGENT_TODO_DIR = ".superpowers/todos";
+
+function sanitizeFilenameSegment(value: string): string {
+  const sanitized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return sanitized || "agent";
+}
+
+export function buildSubagentTodoFile(
+  role: string | undefined,
+  uniqueId: string
+): string {
+  const roleSegment = sanitizeFilenameSegment(role ?? "agent");
+  const idSegment = sanitizeFilenameSegment(uniqueId);
+  return `${SUBAGENT_TODO_DIR}/${roleSegment}-${idSegment}.md`;
+}
+
+function buildTodoGuidance(todoFile: string | undefined): string {
+  if (!todoFile) return "";
+
+  return `
+
+## Superpowers TODO File Isolation
+
+If you need task tracking, use only this todo file:
+
+${todoFile}
+
+Do not use TODO.md. Do not read, create, overwrite, or edit TODO.md for task tracking.
+Do not edit another agent's todo file. Other agents and the controller may be working in the same directory.
+Before reporting back, delete your todo file if it no longer contains useful handoff state. If you leave it in place, explain why in your report.`;
+}
+
+export function buildRolePrompt(
+  role: string | undefined,
+  todoFile?: string
+): string {
+  if (!role) return buildTodoGuidance(todoFile).trim();
   const trimmed = role.trim();
-  if (!trimmed) return "";
-  if (trimmed === "code-quality-reviewer") return CODE_QUALITY_REVIEWER_PROMPT;
-  return `You are a ${trimmed}.`;
+  if (!trimmed) return buildTodoGuidance(todoFile).trim();
+
+  const basePrompt =
+    trimmed === "code-quality-reviewer"
+      ? CODE_QUALITY_REVIEWER_PROMPT
+      : `You are a ${trimmed}.`;
+
+  return `${basePrompt}${buildTodoGuidance(todoFile)}`;
 }
 
 /**

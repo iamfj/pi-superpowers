@@ -11,7 +11,8 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildRolePrompt, buildPiArgs, parseSubagentResult } from "../extensions/subagent-utils.js";
+import { buildRolePrompt, buildPiArgs, parseSubagentResult, buildSubagentTodoFile } from "../extensions/subagent-utils.js";
+import registerSubagentExtension from "../extensions/subagent.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -31,6 +32,10 @@ describe("subagent-utils.ts file", () => {
 
   it("exports parseSubagentResult function", () => {
     expect(typeof parseSubagentResult).toBe("function");
+  });
+
+  it("exports buildSubagentTodoFile function", () => {
+    expect(typeof buildSubagentTodoFile).toBe("function");
   });
 });
 
@@ -71,6 +76,34 @@ describe("subagent.ts file", () => {
       "utf8"
     );
     expect(content).toContain("ENOENT");
+  });
+
+  it("passes assigned todo file guidance to pi exec and returns it in details", async () => {
+    let registeredTool: any;
+    const execCalls: Array<{ command: string; args: string[] }> = [];
+    const fakePi = {
+      registerTool(tool: any) {
+        registeredTool = tool;
+      },
+      async exec(command: string, args: string[]) {
+        execCalls.push({ command, args });
+        return { stdout: "done", stderr: "", code: 0 };
+      },
+    };
+
+    registerSubagentExtension(fakePi as any);
+    const result = await registeredTool.execute(
+      "tool-call-1",
+      { task: "do work", role: "implementer" },
+      undefined,
+      undefined,
+      undefined
+    );
+
+    expect(execCalls[0].command).toBe("pi");
+    expect(execCalls[0].args.join("\n")).toContain(".superpowers/todos/implementer-");
+    expect(execCalls[0].args.join("\n")).toContain("Do not use TODO.md");
+    expect(result.details.todoFile).toContain(".superpowers/todos/implementer-");
   });
 });
 

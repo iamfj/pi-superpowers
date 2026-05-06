@@ -18,7 +18,12 @@
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { buildRolePrompt, buildPiArgs, parseSubagentResult } from "./subagent-utils.js";
+import {
+  buildRolePrompt,
+  buildPiArgs,
+  parseSubagentResult,
+  buildSubagentTodoFile,
+} from "./subagent-utils.js";
 
 // Subagent timeout: 5 minutes (tasks can be long-running)
 const SUBAGENT_TIMEOUT_MS = 5 * 60 * 1000;
@@ -48,7 +53,9 @@ export default function (pi: ExtensionAPI) {
     }),
 
     async execute(toolCallId, params, signal, onUpdate, _ctx) {
-      const rolePrompt = buildRolePrompt(params.role);
+      const uniqueId = `${Date.now()}-${toolCallId}`;
+      const todoFile = buildSubagentTodoFile(params.role, uniqueId);
+      const rolePrompt = buildRolePrompt(params.role, todoFile);
       const args = buildPiArgs(params.task, rolePrompt);
 
       const roleLabel = params.role ?? "agent";
@@ -75,6 +82,7 @@ export default function (pi: ExtensionAPI) {
           content: [{ type: "text", text: output }],
           details: {
             role: roleLabel,
+            todoFile,
             exitCode: result.code,
             stderr: result.stderr || undefined,
           },
@@ -88,7 +96,7 @@ export default function (pi: ExtensionAPI) {
 
         return {
           content: [{ type: "text", text: message }],
-          details: { error: err?.message },
+          details: { todoFile, error: err?.message },
           isError: true,
         };
       }

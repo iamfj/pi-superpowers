@@ -48,10 +48,12 @@ On the Pi platform, some Claude Code tools are not available. Use these equivale
 
 | Claude Code Tool | Pi Equivalent |
 |-----------------|---------------|
-| `TodoWrite` | Write to `TODO.md` file in the project root |
-| `TaskCreate` / `TaskUpdate` / `TaskList` | Use `TODO.md` with checkboxes (`- [ ]` / `- [x]`) |
+| `TodoWrite` | Write to a markdown file under `.superpowers/todos/` |
+| `TaskCreate` / `TaskUpdate` / `TaskList` | Use that todo file with checkboxes (`- [ ]` / `- [x]`) |
 
-When `TodoWrite` is unavailable, maintain a `TODO.md` file to track task progress instead of relying on the in-memory task system.
+When `TodoWrite` is unavailable, maintain a namespaced todo file instead of relying on the in-memory task system. Use `.superpowers/todos/controller.md` for the controller session. Dispatched subagents must use their assigned `.superpowers/todos/<agent-id>.md` file so simultaneous agents do not overwrite each other. Do not use the legacy project-root `TODO.md` filename for Pi task tracking.
+
+Before creating the first todo file, verify `.superpowers/todos/` is ignored by git (`git check-ignore -q .superpowers/todos`). If it is not ignored, add an appropriate pattern to `.gitignore` and commit that gitignore-only fix before continuing.
 
 # Using Skills
 

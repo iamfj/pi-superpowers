@@ -77,9 +77,10 @@ describe("buildPiToolMapping", () => {
     expect(mapping).toMatch(/read/);
   });
 
-  it("mentions TodoWrite replacement", () => {
+  it("mentions namespaced TodoWrite replacement", () => {
     expect(mapping).toMatch(/TodoWrite/);
-    expect(mapping).toMatch(/TODO\.md/);
+    expect(mapping).toContain(".superpowers/todos/controller.md");
+    expect(mapping).toContain("git check-ignore -q .superpowers/todos");
   });
 
   it("mentions Task (subagent) replacement", () => {

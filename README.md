@@ -140,8 +140,8 @@ Pi 的工具名称与原 Claude Code 存在差异，Bootstrap 扩展会将以下
 | 原 Claude Code 工具 | Pi 中的替代方案 |
 |--------------------|--------------|
 | `Skill` tool | `read` 工具读取 `skills/<name>/SKILL.md`，或使用 `/skill:<name>` 命令 |
-| `TodoWrite` | `write`/`edit` 工具操作项目根目录的 `TODO.md`（Markdown 复选框格式） |
-| `Task`（子代理派发）| **方案 A（降级）顺序执行模式**：在当前对话中逐任务实现，每任务后切换角色审查；**方案 B（推荐）`dispatch_agent` 工具**：通过 `pi --no-session --print` 子进程实现真正的上下文隔离（见下方说明） |
+| `TodoWrite` | `write`/`edit` 工具操作 `.superpowers/todos/controller.md`（Markdown 复选框格式） |
+| `Task`（子代理派发）| **方案 A（降级）顺序执行模式**：在当前对话中逐任务实现，每任务后切换角色审查；**方案 B（推荐）`dispatch_agent` 工具**：通过 `pi --no-session --print` 子进程实现真正的上下文隔离，并为每个子代理分配 `.superpowers/todos/<agent-id>.md`（见下方说明） |
 | `Read` | `read`（同名，直接使用）|
 | `Write` | `write`（同名，直接使用）|
 | `Edit` | `edit`（同名，直接使用）|
@@ -162,7 +162,8 @@ Pi 的工具名称与原 Claude Code 存在差异，Bootstrap 扩展会将以下
 4. 修复问题 → 重新审查 → 通过后处理下一任务
 ```
 
-任务状态用 `TODO.md` 文件追踪：
+任务状态用 `.superpowers/todos/controller.md` 文件追踪。创建第一个 todo 文件前，先运行 `git check-ignore -q .superpowers/todos`；如果未被忽略，先更新 `.gitignore` 并单独提交该 gitignore 修复。
+
 ```markdown
 - [x] Task 1: 实现用户模型
 - [ ] Task 2: 实现认证中间件
@@ -245,7 +246,7 @@ AI 在本次响应中遵循 using-superpowers 规则
 | 限制 | 影响 | 缓解措施 |
 |------|------|---------|
 | 无内置子代理（`Task` 工具不可用） | `subagent-driven-development` 无法真正并行执行 | **已通过 `dispatch_agent` 工具解决**：`extensions/subagent.ts` 通过 `pi --no-session --print` 子进程实现上下文隔离；降级方案：顺序执行模式 |
-| 无 `TodoWrite` 工具 | 任务进度无法用原生 UI 显示 | 用 `TODO.md` 文件追踪，功能等价 |
+| 无 `TodoWrite` 工具 | 任务进度无法用原生 UI 显示 | 用 `.superpowers/todos/` 下的命名文件追踪，避免 controller 与 subagent 相互覆盖 |
 | `before_agent_start` 每次都触发 | 需要检测是否已注入 | Bootstrap 扩展用 session ID + turn 计数双重检测 |
 | `using-superpowers` 中的流程图依赖 Graphviz | Dot 语法代码块无法在 Pi TUI 中渲染 | 图表仍可作为文字逻辑参考，不影响功能 |
 

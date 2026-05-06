@@ -267,7 +267,21 @@ Done!
 
 ## Pi Platform Adaptation / Pi 平台适配
 
-On the Pi platform, the `Task` tool for parallel subagent dispatch is not available. Instead, use sequential execution (顺序执行): dispatch one subagent at a time, wait for completion, then dispatch the next. This maintains the same quality gates (spec compliance review, code quality review) while operating within Pi's tool constraints.
+On the Pi platform, `dispatch_agent` replaces Claude Code's `Task` tool. Use sequential execution: dispatch one subagent at a time, wait for completion, then dispatch the next. This maintains the same quality gates (spec compliance review, code quality review) while operating within Pi's tool constraints.
+
+### Superpowers TODO File Isolation
+
+Before creating controller task tracking, verify `.superpowers/todos/` is ignored by git:
+
+```bash
+git check-ignore -q .superpowers/todos
+```
+
+If it is not ignored, add an appropriate pattern to `.gitignore` and commit that gitignore-only fix before continuing. Then use `.superpowers/todos/controller.md` for controller orchestration.
+
+Each dispatched subagent receives its own `.superpowers/todos/<agent-id>.md` path from `dispatch_agent`. Subagents may create and update only their assigned todo file. They must not use `TODO.md` or the controller's todo file. Before reporting back, subagents should delete their todo file if it no longer contains useful handoff state; if they leave it, they must explain why in their report.
+
+At the end of orchestration, clean up `.superpowers/todos/controller.md` if it no longer contains useful handoff state. Leave the ignored directory itself in place only if future todo files remain.
 
 ## Integration
 

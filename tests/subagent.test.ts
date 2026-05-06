@@ -17,6 +17,7 @@ import {
   buildRolePrompt,
   buildPiArgs,
   parseSubagentResult,
+  buildSubagentTodoFile,
 } from "../extensions/subagent-utils.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,6 +53,38 @@ describe("buildRolePrompt", () => {
 
   it("returns empty string for empty string role", () => {
     expect(buildRolePrompt("")).toBe("");
+  });
+
+  it("adds namespaced TODO guidance when a todo file is provided", () => {
+    const prompt = buildRolePrompt("implementer", ".superpowers/todos/implementer-123.md");
+    expect(prompt).toContain(".superpowers/todos/implementer-123.md");
+    expect(prompt).toContain("Do not use TODO.md");
+    expect(prompt).toContain("Do not edit another agent's todo file");
+    expect(prompt).toContain("Before reporting back, delete your todo file if it no longer contains useful handoff state");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildSubagentTodoFile
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("buildSubagentTodoFile", () => {
+  it("places subagent TODO files under .superpowers/todos", () => {
+    expect(buildSubagentTodoFile("implementer", "abc123")).toBe(
+      ".superpowers/todos/implementer-abc123.md"
+    );
+  });
+
+  it("sanitizes role names for filenames", () => {
+    expect(buildSubagentTodoFile("Spec Reviewer!", "id-1")).toBe(
+      ".superpowers/todos/spec-reviewer-id-1.md"
+    );
+  });
+
+  it("uses agent when role is missing", () => {
+    expect(buildSubagentTodoFile(undefined, "id-2")).toBe(
+      ".superpowers/todos/agent-id-2.md"
+    );
   });
 });
 
